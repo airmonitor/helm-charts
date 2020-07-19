@@ -2,12 +2,11 @@
 ## ref: https://hub.docker.com/r/library/influxdb/tags/
 image:
   repository: "influxdb"
-  tag: "1.8.0-alpine"
+  tag: "1.8.1"
   pullPolicy: IfNotPresent
   ## If specified, use these secrets to access the images
   # pullSecrets:
   #   - registry-secret
-
 
 serviceAccount:
   create: true
@@ -18,15 +17,15 @@ serviceAccount:
 ## ref: https://docs.influxdata.com/influxdb/v1.7/tools/api/#ping-http-endpoint
 ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 ##
-livenessProbe: {}
-  # initialDelaySeconds: 30
-  # timeoutSeconds: 5
-  # scheme: HTTP
+livenessProbe:
+   initialDelaySeconds: 30
+   timeoutSeconds: 5
+   scheme: HTTPS
 
-readinessProbe: {}
-  # initialDelaySeconds: 5
-  # timeoutSeconds: 1
-  # scheme: HTTP
+readinessProbe:
+   initialDelaySeconds: 30
+   timeoutSeconds: 10
+   scheme: HTTPS
 
 securityContext: {}
   # runAsUser: 999
@@ -44,8 +43,11 @@ startupProbe:
 ##
 service:
   ## Add annotations to service
-  # annotations: {}
-  type: ClusterIP
+  annotations:
+    metallb.universe.tf/address-pool: airmonitor
+    prometheus.io/scrape: 'true'
+  type: LoadBalancer
+  loadBalancerIP: 192.168.1.177
 
 ## Persist data to a persistent volume
 ##
@@ -63,9 +65,10 @@ persistence:
   ##   GKE, AWS & OpenStack)
   ##
   # storageClass: "-"
+  storageClass: "influxdb"
   annotations:
   accessMode: ReadWriteOnce
-  size: 8Gi
+  size: 7Gi
 
 ## Deploy InfluxDB Enterprise - License required
 ## ref: https://www.influxdata.com/products/influxdb-enterprise/
@@ -145,16 +148,17 @@ setDefaultUser:
 
 ## Configure resource requests and limits
 ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
-resources: {}
-#  requests:
-#    memory: 256Mi
-#    cpu: 0.1
-#  limits:
-#    memory: 16Gi
-#    cpu: 8
+resources:
+  requests:
+    memory: 2Gi
+    cpu: 1
+  limits:
+    memory: 6Gi
+    cpu: 2
 
 # Annotations to be added to InfluxDB pods
-podAnnotations: {}
+podAnnotations:
+    prometheus.io/scrape: 'true'
 
 ingress:
   enabled: false
@@ -168,14 +172,26 @@ ingress:
 
 
 ## Add custom volume and volumeMounts
-# volumes:
-#   - name: ssl-cert-volume
-#     secret:
-#       secretName: secret-name
-# mountPoints:
-#   - name: ssl-cert-volume
-#     mountPath: /etc/ssl/certs/selfsigned/
-#     readOnly: true
+volumes:
+ - name: influxdb-server-cert
+   secret:
+     secretName: influxdb-server.crt
+ - name: influxdb-server-cert-key
+   secret:
+     secretName: influxdb-cert.key
+ - name: influxdb-conf
+   secret:
+     secretName: influxdb.conf
+mountPoints:
+ - name: influxdb-server-cert
+   mountPath: /etc/influxdb/ssl/cert/
+   readOnly: true
+ - name: influxdb-server-cert-key
+   mountPath: /etc/influxdb/ssl/cert-key/
+   readOnly: true
+ - name: influxdb-conf
+   mountPath: /etc/influxdb/
+   readOnly: true
 
 ## Use an alternate scheduler, e.g. "stork".
 ## ref: https://kubernetes.io/docs/tasks/administer-cluster/configure-multiple-schedulers/
@@ -185,7 +201,9 @@ ingress:
 ## Node labels for pod assignment
 ## Ref: https://kubernetes.io/docs/user-guide/node-selection/
 ##
-nodeSelector: {}
+nodeSelector: {
+  kubernetes.io/hostname: node2
+}
 
 ## Affinity for pod assignment
 ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity

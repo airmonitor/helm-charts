@@ -1,3 +1,5 @@
+helm upgrade -i influxdb influxdata/influxdb -n airmonitor -f values.yaml
+
 # InfluxDB Helm chart
 
 [InfluxDB](https://github.com/influxdata/influxdb) is an open source time series database with no external dependencies. It's useful for recording metrics, events, and performing analytics.
