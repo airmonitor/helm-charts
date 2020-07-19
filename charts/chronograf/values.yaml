@@ -18,7 +18,7 @@ service:
 ##
 persistence:
   enabled: false
-  ## chronograf data Persistent Volume Storage Class
+  ## chronograf data Persistent Volume Storage ClassK
   ## If defined, storageClassName: <storageClass>
   ## If set to "-", storageClassName: "", which disables dynamic provisioning
   ## If undefined (the default) or set to null, no storageClassName spec is
@@ -37,13 +37,15 @@ resources:
     memory: 256Mi
     cpu: 0.1
   limits:
-    memory: 2Gi
-    cpu: 2
+    memory: 100Gi
+    cpu: 0.5
 
 ## Node labels for pod assignment
 ## ref: https://kubernetes.io/docs/user-guide/node-selection/
 #
-nodeSelector: {}
+nodeSelector: {
+  kubernetes.io/hostname: node3
+}
 
  ## Tolerations for pod assignment
 ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
